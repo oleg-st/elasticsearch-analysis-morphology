@@ -23,17 +23,14 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath "org.elasticsearch.gradle:build-tools:6.2.2"
-        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7"
+        classpath "org.elasticsearch.gradle:build-tools:6.6.1"
+        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
     }
 }
 
-apply plugin: 'idea'
-apply plugin:'java'
-apply plugin: 'eclipse'
+apply plugin: 'java'
 apply plugin: 'elasticsearch.esplugin'
 apply plugin: 'com.jfrog.bintray'
-apply plugin: 'maven-publish'
 
 repositories {
     maven {
@@ -42,12 +39,14 @@ repositories {
     }
 }
 
-version = '6.2.2'
+version = '6.6.1'
 
 esplugin {
     description 'English and Russian Morphology for ElasticSearch.'
     classname 'org.elasticsearch.plugin.analysis.morphology.AnalysisMorphologyPlugin'
     name 'analysis-morphology'
+    licenseFile = rootProject.file('LICENSE.txt')
+    noticeFile = rootProject.file('NOTICE.txt')
 }
 esplugin.version = version
 
@@ -57,18 +56,18 @@ dependencies {
     compile "org.apache.lucene.morphology:morph:1.4"
 }
 
-publishing {
-    publications {
-        DefaultPublication(MavenPublication) {
-            groupId 'org.elasticsearch'
-            artifactId 'elasticsearch-analysis-morphology'
-            from components.java
-            artifact javadocJar
-            artifact sourcesJar
-            artifact bundlePlugin
-        }
-    }
-}
+// publishing {
+//     publications {
+//         DefaultPublication(MavenPublication) {
+//             groupId 'org.elasticsearch'
+//             artifactId 'elasticsearch-analysis-morphology'
+//             from components.java
+//             artifact javadocJar
+//             artifact sourcesJar
+//             artifact bundlePlugin
+//         }
+//     }
+// }
 
 
 // Only needed if we publish to bintray

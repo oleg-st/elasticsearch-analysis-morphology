@@ -23,7 +23,6 @@ import org.apache.lucene.morphology.analyzer.MorphologyAnalyzer;
 import org.apache.lucene.morphology.analyzer.MorphologyFilter;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
-import org.elasticsearch.common.io.FastStringReader;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.Index;
 import org.elasticsearch.index.analysis.NamedAnalyzer;
@@ -77,7 +76,7 @@ public class SimpleMorphologyAnalysisTests extends ESTestCase {
         LuceneMorphology englishLuceneMorphology = new EnglishLuceneMorphology();
 
         MorphologyAnalyzer russianAnalyzer = new MorphologyAnalyzer(russianLuceneMorphology);
-        TokenStream stream = russianAnalyzer.tokenStream("name", new FastStringReader("тест пм тест"));
+        TokenStream stream = russianAnalyzer.tokenStream("name", new StringReader("тест пм тест"));
         MorphologyFilter englishFilter = new MorphologyFilter(stream, englishLuceneMorphology);
         assertSimpleTSOutput(englishFilter, new String[] {"тест", "тесто", "пм", "тест", "тесто"});
     }
