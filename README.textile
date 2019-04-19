@@ -13,4 +13,4 @@ h2. Compatibility
 The following table shows the compatible versions of Elasticsearch and Morphological Analysis Plugin.
 
 |_. Morphological Analysis Plugin |_.  Elasticsearch   |_. URL  |
-|        ----                     | 6.6.1+  | build yourself: gradlew build |
+|        ----                     | 7.0.0+  | build yourself: gradlew build |

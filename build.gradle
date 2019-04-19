@@ -23,7 +23,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath "org.elasticsearch.gradle:build-tools:6.6.1"
+        classpath "org.elasticsearch.gradle:build-tools:7.0.0"
         classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
     }
 }
@@ -37,9 +37,12 @@ repositories {
         name 'bintray-babayotakun-russianmorphology'
         url "http://dl.bintray.com/babayotakun/russianmorphology"
     }
+    flatDir {
+        dirs 'libs'
+    }
 }
 
-version = '6.6.1'
+version = '7.0.0'
 
 esplugin {
     description 'English and Russian Morphology for ElasticSearch.'
@@ -51,9 +54,9 @@ esplugin {
 esplugin.version = version
 
 dependencies {
-    compile "org.apache.lucene.morphology:russian:1.4"
-    compile "org.apache.lucene.morphology:english:1.4"
-    compile "org.apache.lucene.morphology:morph:1.4"
+    compile "org.apache.lucene.morphology:russian:1.5"
+    compile "org.apache.lucene.morphology:english:1.5"
+    compile "org.apache.lucene.morphology:morph:1.5"
 }
 
 // publishing {
