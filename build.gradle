@@ -23,7 +23,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath "org.elasticsearch.gradle:build-tools:7.8.0"
+        classpath "org.elasticsearch.gradle:build-tools:7.11.2"
         classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
     }
 }
@@ -42,7 +42,7 @@ repositories {
     }
 }
 
-version = '7.8.0'
+version = '7.11.2'
 
 esplugin {
     description 'English and Russian Morphology for ElasticSearch.'
@@ -88,10 +88,7 @@ if (project.hasProperty('bintrayUser')) {
 }
 
 // TODO: temporary workaround until it's fixed in elasticsearch
-thirdPartyAudit.enabled = false
-dependencyLicenses.enabled = false
 validateNebulaPom.enabled = false
-licenseHeaders.enabled = false
 
 project.licenseFile = project.rootProject.file('LICENSE.txt')
 project.noticeFile = project.rootProject.file('NOTICE.txt')
