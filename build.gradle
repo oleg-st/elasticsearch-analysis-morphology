@@ -18,7 +18,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.elasticsearch.gradle:build-tools:7.16.1"
+        classpath "org.elasticsearch.gradle:build-tools:7.16.3"
     }
 }
 
@@ -33,7 +33,7 @@ repositories {
     mavenCentral()
 }
 
-version = '7.16.1'
+version = '7.16.3'
 
 esplugin {
     description 'English and Russian Morphology for ElasticSearch.'
@@ -50,8 +50,8 @@ configurations {
 }
 
 dependencies {
-    testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.16.0'
-    yamlRestTestRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.16.0'
+    testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.17.1'
+    yamlRestTestRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.17.1'
     implementation "org.apache.lucene.morphology:russian:1.5"
     implementation "org.apache.lucene.morphology:english:1.5"
     implementation "org.apache.lucene.morphology:morph:1.5"
