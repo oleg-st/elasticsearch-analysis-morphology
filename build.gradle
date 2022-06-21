@@ -18,7 +18,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.elasticsearch.gradle:build-tools:7.16.3"
+        classpath "org.elasticsearch.gradle:build-tools:7.17.4"
     }
 }
 
@@ -33,7 +33,7 @@ repositories {
     mavenCentral()
 }
 
-version = '7.16.3'
+version = '7.17.4'
 
 esplugin {
     description 'English and Russian Morphology for ElasticSearch.'
