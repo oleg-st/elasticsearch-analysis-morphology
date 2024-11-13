@@ -65,9 +65,11 @@ yamlRestTest {
     jvmArgs '-Dtests.security.manager=false'
 }
 
-// use morph 1.7 for 8.7.0+, 1.6 for 8.0+, 1.5 for 7.0+
+// use morph 1.8 for 8.15.0+, 1.7 for 8.7.0+, 1.6 for 8.0+, 1.5 for 7.0+
 VersionNumber versionNumber = VersionNumber.parse(version as String);
-if (versionNumber >= VersionNumber.parse('8.7.0')) {
+if (versionNumber >= VersionNumber.parse('8.15.0')) {
+    ext.morphVersion = '1.8'
+} else if (versionNumber >= VersionNumber.parse('8.7.0')) {
     ext.morphVersion = '1.7'
 } else if (versionNumber >= VersionNumber.parse('8.0.0')) {
     ext.morphVersion = '1.6'
