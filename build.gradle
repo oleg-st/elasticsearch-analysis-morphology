@@ -54,7 +54,10 @@ test {
        Java 17+:
        "unable to install test security manager"
        "The Security Manager is deprecated and will be removed in a future release" */
-    jvmArgs '-Dtests.security.manager=false'
+    jvmArgs(
+            '-Dtests.security.manager=false',
+            '-Des.entitlement.enableForTests=false'
+    )
 }
 
 yamlRestTest {
@@ -62,7 +65,10 @@ yamlRestTest {
        Java 17+:
        "unable to install test security manager"
        "The Security Manager is deprecated and will be removed in a future release" */
-    jvmArgs '-Dtests.security.manager=false'
+    jvmArgs(
+            '-Dtests.security.manager=false',
+            '-Des.entitlement.enableForTests=false'
+    )
 }
 
 // use morph 1.8 for 8.15.0+, 1.7 for 8.7.0+, 1.6 for 8.0+, 1.5 for 7.0+
