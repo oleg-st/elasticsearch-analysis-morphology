@@ -15,4 +15,4 @@
   - match : { nodes.$master.plugins.0.name: "analysis-morphology" }
   - match :
       nodes.$master.plugins.0.version: |
-                                          /^\d+\.\d+\.\d+(\.\d+)?-surnames\.3$/
+                                          /^\d+\.\d+\.\d+(\.\d+)?-surnames\.4$/

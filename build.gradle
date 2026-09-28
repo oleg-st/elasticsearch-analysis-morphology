@@ -46,7 +46,7 @@ esplugin {
     noticeFile = rootProject.file('NOTICE.txt')
 }
 // Keep the Elasticsearch target unchanged; identify this plugin's surname revision separately.
-esplugin.version = "${version}-surnames.3"
+esplugin.version = "${version}-surnames.4"
 
 tasks.named('bundlePlugin', Zip) {
     archiveVersion = esplugin.version
