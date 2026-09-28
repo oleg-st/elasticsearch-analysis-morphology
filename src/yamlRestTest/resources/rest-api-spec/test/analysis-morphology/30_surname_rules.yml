@@ -1,0 +1,260 @@
+---
+setup:
+  - do:
+      indices.create:
+        index: surname_rules
+        body:
+          settings:
+            analysis:
+              filter:
+                index_names: { type: russian_morphology_surnames, mode: index, rules_filter: true, surnames: ["Шекспир"] }
+                search_names: { type: russian_morphology_surnames, mode: search, rules_filter: true, surnames: ["Шекспир"] }
+                surname_only: { type: russian_surname, rules_filter: true, surnames: ["Шекспир"] }
+                strict_names: { type: russian_surname, rules_filter: true, rules_filter_mode: strict }
+                strict_rules_only: { type: russian_surname, rules_filter: true, rules_filter_mode: strict, use_builtin_surnames: false }
+                strict_surname_search: { type: russian_surname, mode: search, rules_filter: true, rules_filter_mode: strict }
+                strict_extra: { type: russian_surname, rules_filter: true, rules_filter_mode: strict, surnames: ["Квазитест"] }
+                strict_search: { type: russian_morphology_surnames, mode: search, rules_filter: true, rules_filter_mode: strict, surnames: ["Квазитест"] }
+              analyzer:
+                names_index: { type: custom, tokenizer: standard, filter: [index_names] }
+                names_search: { type: custom, tokenizer: standard, filter: [search_names] }
+                surname_only: { type: custom, tokenizer: standard, filter: [surname_only] }
+                strict_names: { type: custom, tokenizer: standard, filter: [strict_names] }
+                strict_rules_only: { type: custom, tokenizer: standard, filter: [strict_rules_only] }
+                strict_surname_search: { type: custom, tokenizer: standard, filter: [strict_surname_search] }
+                strict_extra: { type: custom, tokenizer: standard, filter: [strict_extra] }
+                strict_search: { type: custom, tokenizer: standard, filter: [strict_search] }
+          mappings:
+            properties:
+              surname: { type: text, analyzer: strict_names, search_analyzer: strict_surname_search }
+              text: { type: text, analyzer: names_index, search_analyzer: names_search }
+
+---
+"Rules filter only surname tokens and preserve offsets and positions":
+  - do:
+      indices.analyze:
+        index: surname_rules
+        body: { analyzer: names_index, text: "Министерство Нилову" }
+  - length: { tokens: 3 }
+  - match: { tokens.0.token: "министерство" }
+  - match: { tokens.1.token: "нилов" }
+  - match: { tokens.2.token: "__surname__:нилову" }
+  - match: { tokens.2.position: 1 }
+  - match: { tokens.2.start_offset: 13 }
+  - match: { tokens.2.end_offset: 19 }
+  - do:
+      indices.analyze:
+        index: surname_rules
+        body: { analyzer: surname_only, text: "Министерство Документами Нилову Шекспиром" }
+  - length: { tokens: 2 }
+  - match: { tokens.0.token: "__surname__:нилову" }
+  - match: { tokens.0.position: 2 }
+  - match: { tokens.1.token: "__surname__:шекспиром" }
+  - match: { tokens.1.position: 3 }
+
+---
+"Filtered indexes keep inflected names searchable in both directions":
+  - do:
+      bulk:
+        refresh: true
+        body:
+          - index: { _index: surname_rules, _id: base }
+          - { text: "Нилов" }
+          - index: { _index: surname_rules, _id: inflected }
+          - { text: "Ниловым" }
+          - index: { _index: surname_rules, _id: rare }
+          - { text: "Шекспиром" }
+  - do:
+      search:
+        index: surname_rules
+        body: { query: { match: { text: "нилову" } } }
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surname_rules
+        body: { query: { match: { text: "шекспир" } } }
+  - match: { hits.total.value: 1 }
+  - match: { hits.hits.0._id: rare }
+
+---
+"Both modes remain selectable and strict exceptions work in real analyzers":
+  - do:
+      indices.analyze:
+        index: surname_rules
+        body: { analyzer: surname_only, text: "Квазитест Нилову" }
+  - length: { tokens: 2 }
+  - do:
+      indices.analyze:
+        index: surname_rules
+        body: { analyzer: strict_names, text: "Квазитест Нилову" }
+  - length: { tokens: 1 }
+  - match: { tokens.0.token: "__surname__:нилову" }
+  - match: { tokens.0.position: 1 }
+  - do:
+      indices.analyze:
+        index: surname_rules
+        body: { analyzer: strict_extra, text: "Квазитестом Нилову" }
+  - length: { tokens: 2 }
+  - match: { tokens.0.token: "__surname__:квазитестом" }
+  - do:
+      indices.analyze:
+        index: surname_rules
+        body: { analyzer: strict_search, text: "квазитест" }
+  - match: { tokens.0.token: "квазитест" }
+  - match: { tokens.1.token: "__surname__:квазитест" }
+  - match: { tokens.2.token: "__surname__:квазитеста" }
+
+---
+"Strict defaults load surname exceptions from the installed plugin":
+  - do:
+      indices.analyze:
+        index: surname_rules
+        body: { analyzer: strict_names, text: "Мельник Мельником Мюллером Министерство" }
+  - length: { tokens: 3 }
+  - match: { tokens.0.token: "__surname__:мельник" }
+  - match: { tokens.1.token: "__surname__:мельником" }
+  - match: { tokens.2.token: "__surname__:мюллером" }
+  - do:
+      indices.analyze:
+        index: surname_rules
+        body: { analyzer: strict_rules_only, text: "Мельник Коваль Мюллер Министерство" }
+  - length: { tokens: 0 }
+
+---
+"Consonant surnames are searchable in both directions using only surname tokens":
+  - do:
+      bulk:
+        refresh: true
+        body:
+          - {"index": {"_index": "surname_rules", "_id": "0-0"}}
+          - {"surname": "Мельник"}
+          - {"index": {"_index": "surname_rules", "_id": "0-1"}}
+          - {"surname": "Мельником"}
+          - {"index": {"_index": "surname_rules", "_id": "1-0"}}
+          - {"surname": "Коваль"}
+          - {"index": {"_index": "surname_rules", "_id": "1-1"}}
+          - {"surname": "Ковалем"}
+          - {"index": {"_index": "surname_rules", "_id": "2-0"}}
+          - {"surname": "Бондарь"}
+          - {"index": {"_index": "surname_rules", "_id": "2-1"}}
+          - {"surname": "Бондарю"}
+          - {"index": {"_index": "surname_rules", "_id": "3-0"}}
+          - {"surname": "Мюллер"}
+          - {"index": {"_index": "surname_rules", "_id": "3-1"}}
+          - {"surname": "Мюллером"}
+          - {"index": {"_index": "surname_rules", "_id": "4-0"}}
+          - {"surname": "Бергер"}
+          - {"index": {"_index": "surname_rules", "_id": "4-1"}}
+          - {"surname": "Бергера"}
+          - {"index": {"_index": "surname_rules", "_id": "5-0"}}
+          - {"surname": "Шульц"}
+          - {"index": {"_index": "surname_rules", "_id": "5-1"}}
+          - {"surname": "Шульцем"}
+  - do:
+      search:
+        index: surname_rules
+        body:
+          sort: ["_doc"]
+          query:
+            match:
+              surname: "мельник"
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surname_rules
+        body:
+          sort: ["_doc"]
+          query:
+            match:
+              surname: "мельником"
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surname_rules
+        body:
+          sort: ["_doc"]
+          query:
+            match:
+              surname: "коваль"
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surname_rules
+        body:
+          sort: ["_doc"]
+          query:
+            match:
+              surname: "ковалем"
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surname_rules
+        body:
+          sort: ["_doc"]
+          query:
+            match:
+              surname: "бондарь"
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surname_rules
+        body:
+          sort: ["_doc"]
+          query:
+            match:
+              surname: "бондарю"
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surname_rules
+        body:
+          sort: ["_doc"]
+          query:
+            match:
+              surname: "мюллер"
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surname_rules
+        body:
+          sort: ["_doc"]
+          query:
+            match:
+              surname: "мюллером"
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surname_rules
+        body:
+          sort: ["_doc"]
+          query:
+            match:
+              surname: "бергер"
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surname_rules
+        body:
+          sort: ["_doc"]
+          query:
+            match:
+              surname: "бергера"
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surname_rules
+        body:
+          sort: ["_doc"]
+          query:
+            match:
+              surname: "шульц"
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surname_rules
+        body:
+          sort: ["_doc"]
+          query:
+            match:
+              surname: "шульцем"
+  - match: { hits.total.value: 2 }

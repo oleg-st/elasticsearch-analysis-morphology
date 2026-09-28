@@ -10,3 +10,8 @@ dictionaries can be found at http://aot.ru/.
 
 The LICENSE and NOTICE files for all dependencies may be found in the licenses/
 directory.
+
+This product includes Petrovich inflection rules, Copyright (c) 2013
+Petrovich Developers, distributed under the MIT License.
+Source: https://github.com/petrovich/petrovich-rules
+The full license is bundled in surname/PETROVICH-LICENSE.txt in the plugin JAR.

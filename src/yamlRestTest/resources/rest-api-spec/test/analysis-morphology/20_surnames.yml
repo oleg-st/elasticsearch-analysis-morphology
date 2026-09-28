@@ -1,0 +1,268 @@
+---
+setup:
+  - do:
+      indices.create:
+        index: surnames
+        body:
+          settings:
+            number_of_shards: 1
+            number_of_replicas: 0
+            analysis:
+              filter:
+                combined_index: { type: russian_morphology_surnames, mode: index, stopwords: ["а","без","более","бы","был","была","были","было","быть","в","вам","вас","весь","во","вот","все","всего","всех","вы","где","да","даже","для","до","его","ее","если","есть","еще","же","за","здесь","и","из","или","им","их","к","как","ко","когда","кто","ли","либо","мне","может","мы","на","надо","наш","не","него","нее","нет","ни","них","но","ну","о","об","однако","он","она","они","оно","от","очень","по","под","при","с","со","так","также","такой","там","те","тем","то","того","тоже","той","только","том","ты","у","уже","хотя","чего","чей","чем","что","чтобы","чье","чья","эта","эти","это","я"] }
+                combined_search: { type: russian_morphology_surnames, mode: search, stopwords: ["а","без","более","бы","был","была","были","было","быть","в","вам","вас","весь","во","вот","все","всего","всех","вы","где","да","даже","для","до","его","ее","если","есть","еще","же","за","здесь","и","из","или","им","их","к","как","ко","когда","кто","ли","либо","мне","может","мы","на","надо","наш","не","него","нее","нет","ни","них","но","ну","о","об","однако","он","она","они","оно","от","очень","по","под","при","с","со","так","также","такой","там","те","тем","то","того","тоже","той","только","том","ты","у","уже","хотя","чего","чей","чем","что","чтобы","чье","чья","эта","эти","это","я"] }
+                surname_index: { type: russian_surname, mode: index }
+                surname_search: { type: russian_surname, mode: search }
+                ru_stop: { type: stop, stopwords: ["а","без","более","бы","был","была","были","было","быть","в","вам","вас","весь","во","вот","все","всего","всех","вы","где","да","даже","для","до","его","ее","если","есть","еще","же","за","здесь","и","из","или","им","их","к","как","ко","когда","кто","ли","либо","мне","может","мы","на","надо","наш","не","него","нее","нет","ни","них","но","ну","о","об","однако","он","она","они","оно","от","очень","по","под","при","с","со","так","также","такой","там","те","тем","то","того","тоже","той","только","том","ты","у","уже","хотя","чего","чей","чем","что","чтобы","чье","чья","эта","эти","это","я"] }
+                fio:
+                  type: pattern_capture
+                  preserve_original: true
+                  patterns: ['^\p{Lu}\.\p{Lu}\.(\p{Lu}\p{IsAlphabetic}+)$', '^\p{Lu}\.(\p{Lu}\p{IsAlphabetic}+)$']
+                index_variants:
+                  type: multiplexer
+                  preserve_original: false
+                  filters: ["surname_index", "lowercase,ru_stop,russian_morphology"]
+                search_variants:
+                  type: multiplexer
+                  preserve_original: false
+                  filters: ["surname_search", "lowercase,ru_stop,russian_morphology"]
+              analyzer:
+                combined_index_analyzer: { type: custom, tokenizer: standard, filter: [combined_index] }
+                combined_search_analyzer: { type: custom, tokenizer: standard, filter: [combined_search] }
+                surname_index_analyzer: { type: custom, tokenizer: standard, filter: [fio, index_variants] }
+                surname_search_analyzer: { type: custom, tokenizer: standard, filter: [fio, search_variants] }
+                surname_only_index: { type: custom, tokenizer: standard, filter: [surname_index] }
+                surname_only_search: { type: custom, tokenizer: standard, filter: [surname_search] }
+          mappings:
+            properties:
+              text:
+                type: text
+                analyzer: combined_index_analyzer
+                search_analyzer: combined_search_analyzer
+              surname:
+                type: text
+                analyzer: surname_only_index
+                search_analyzer: surname_only_search
+
+---
+"Index positions, ordinary morphology and initials":
+  - do:
+      indices.analyze:
+        index: surnames
+        body: { analyzer: surname_index_analyzer, text: "документами и Нилову" }
+  - length: { tokens: 3 }
+  - match: { tokens.0.token: "документ" }
+  - match: { tokens.0.position: 0 }
+  - match: { tokens.1.token: "__surname__:нилову" }
+  - match: { tokens.1.position: 2 }
+  - match: { tokens.2.token: "нилов" }
+  - match: { tokens.2.position: 2 }
+  - do:
+      indices.analyze:
+        index: surnames
+        body: { analyzer: surname_index_analyzer, text: "японские автомобили" }
+  - length: { tokens: 2 }
+  - match: { tokens.0.token: "японский" }
+  - match: { tokens.1.token: "автомобиль" }
+  - do:
+      index:
+        index: surnames
+        id: initials
+        refresh: true
+        body: { text: "подписано И.И.Ниловым" }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { text: "нилову" } } }
+  - match: { hits.total.value: 1 }
+  - match: { hits.hits.0._id: initials }
+
+---
+"Search in both directions, lower case queries and unrelated surnames":
+  - do:
+      bulk:
+        refresh: true
+        body:
+          - index: { _index: surnames, _id: nilov }
+          - { text: "Нилов подписал документ", surname: "Нилов" }
+          - index: { _index: surnames, _id: nilovym }
+          - { text: "Документ подписан Ниловым", surname: "Ниловым" }
+          - index: { _index: surnames, _id: manturovu }
+          - { text: "Документ передан Мантурову", surname: "Мантурову" }
+          - index: { _index: surnames, _id: manturovym }
+          - { text: "Документ подписан Мантуровым", surname: "Мантуровым" }
+          - index: { _index: surnames, _id: unrelated }
+          - { text: "Петров подписал документ", surname: "Петров" }
+  - is_false: errors
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { text: "нилову" } } }
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { text: "Нилов" } } }
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { text: "МАНТУРОВ" } } }
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { text: "мантурову" } } }
+  - match: { hits.total.value: 2 }
+  # The surname channel must work independently of accidental AOT matches.
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { surname: "нилову" } } }
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { surname: "мантуров" } } }
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { text: "документами" } } }
+  - match: { hits.total.value: 5 }
+
+---
+"Phrases preserve gaps, AND keeps words separate, and highlighting uses source offsets":
+  - do:
+      bulk:
+        refresh: true
+        body:
+          - index: { _index: surnames, _id: adjacent }
+          - { text: "передано Нилову сегодня" }
+          - index: { _index: surnames, _id: gap }
+          - { text: "передано в Нилову сегодня" }
+          - index: { _index: surnames, _id: other }
+          - { text: "передано Петрову сегодня" }
+  - do:
+      search:
+        index: surnames
+        body:
+          query: { match_phrase: { text: "передано ниловым" } }
+          highlight:
+            fields: { text: {} }
+  - match: { hits.total.value: 1 }
+  - match: { hits.hits.0._id: adjacent }
+  - match: { hits.hits.0.highlight.text.0: "<em>передано Нилову</em> сегодня" }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { text: { query: "ниловым сегодня", operator: and } } } }
+  - match: { hits.total.value: 2 }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { text: { query: "ниловым отсутствует", operator: and } } } }
+  - match: { hits.total.value: 0 }
+
+---
+"Female, indeclinable, exceptional and yo surnames":
+  - do:
+      bulk:
+        refresh: true
+        body:
+          - index: { _index: surnames, _id: female }
+          - { surname: "Достоевской" }
+          - index: { _index: surnames, _id: exception }
+          - { surname: "Цою" }
+          - index: { _index: surnames, _id: indeclinable }
+          - { surname: "Шевченко" }
+          - index: { _index: surnames, _id: yo }
+          - { surname: "Фёдоровым" }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { surname: "достоевская" } } }
+  - match: { hits.total.value: 1 }
+  - match: { hits.hits.0._id: female }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { surname: "цой" } } }
+  - match: { hits.total.value: 1 }
+  - match: { hits.hits.0._id: exception }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { surname: "шевченко" } } }
+  - match: { hits.total.value: 1 }
+  - match: { hits.hits.0._id: indeclinable }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { surname: "федорову" } } }
+  - match: { hits.total.value: 1 }
+  - match: { hits.hits.0._id: yo }
+
+---
+"Capitalized and uppercase foreign surnames are preserved without a word blacklist":
+  - do:
+      indices.analyze:
+        index: surnames
+        body:
+          analyzer: surname_only_index
+          text: "МИНИСТЕРСТВО ФИНАНСОВ РОССИЙСКОЙ ФЕДЕРАЦИИ КИМ ЦОЙ Ли"
+  - length: { tokens: 7 }
+  - match: { tokens.0.token: "__surname__:министерство" }
+  - match: { tokens.4.token: "__surname__:ким" }
+  - match: { tokens.4.position: 4 }
+  - match: { tokens.5.token: "__surname__:цой" }
+  - match: { tokens.6.token: "__surname__:ли" }
+  - do:
+      bulk:
+        refresh: true
+        body:
+          - index: { _index: surnames, _id: kim }
+          - { text: "КИМ подписал документ", surname: "КИМ" }
+          - index: { _index: surnames, _id: tsoy }
+          - { text: "ЦОЙ подписал документ", surname: "ЦОЙ" }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { surname: "киму" } } }
+  - match: { hits.total.value: 1 }
+  - match: { hits.hits.0._id: kim }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { surname: "цою" } } }
+  - match: { hits.total.value: 1 }
+  - match: { hits.hits.0._id: tsoy }
+
+---
+"Production stopwords preserve surname homonyms in full text search":
+  - do:
+      indices.analyze:
+        index: surnames
+        body: { analyzer: combined_index_analyzer, text: "более однако только чтобы" }
+  - length: { tokens: 0 }
+  - do:
+      bulk:
+        refresh: true
+        body:
+          - index: { _index: surnames, _id: li }
+          - { text: "Ли подписал документ" }
+          - index: { _index: surnames, _id: ko }
+          - { text: "Ко подписал документ" }
+  - is_false: errors
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { text: "ли" } } }
+  - match: { hits.total.value: 1 }
+  - match: { hits.hits.0._id: li }
+  - do:
+      search:
+        index: surnames
+        body: { query: { match: { text: "ко" } } }
+  - match: { hits.total.value: 1 }
+  - match: { hits.hits.0._id: ko }

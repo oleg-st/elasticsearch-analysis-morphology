@@ -16,6 +16,9 @@ import org.gradle.util.internal.VersionNumber
 
 
 buildscript {
+    if (VersionNumber.parse(version as String) < VersionNumber.parse('8.16.0')) {
+        throw new GradleException("Minimum supported Elasticsearch version is 8.16.0; requested ${version}")
+    }
     repositories {
         mavenCentral()
     }
@@ -42,7 +45,12 @@ esplugin {
     licenseFile = rootProject.file('LICENSE.txt')
     noticeFile = rootProject.file('NOTICE.txt')
 }
-esplugin.version = version
+// Keep the Elasticsearch target unchanged; identify this plugin's surname revision separately.
+esplugin.version = "${version}-surnames.3"
+
+tasks.named('bundlePlugin', Zip) {
+    archiveVersion = esplugin.version
+}
 
 configurations {
     yamlRestTestRuntimeOnly.extendsFrom testRuntimeOnly
@@ -65,19 +73,21 @@ yamlRestTest {
     jvmArgs '-Dtests.security.manager=false'
 }
 
-// use morph 1.8 for 8.15.0+, 1.7 for 8.7.0+, 1.6 for 8.0+, 1.5 for 7.0+
-VersionNumber versionNumber = VersionNumber.parse(version as String);
-if (versionNumber >= VersionNumber.parse('8.15.0')) {
-    ext.morphVersion = '1.8'
-} else if (versionNumber >= VersionNumber.parse('8.7.0')) {
-    ext.morphVersion = '1.7'
-} else if (versionNumber >= VersionNumber.parse('8.0.0')) {
-    ext.morphVersion = '1.6'
-} else if (versionNumber >= VersionNumber.parse('7.0.0')) {
-    ext.morphVersion = '1.5'
-} else {
-    throw new GradleException("Unsupported elasticsearch version ${version}")
+// The minimal INTEG_TEST distribution omits analysis-common (multiplexer, pattern_capture, stop).
+testClusters.named('yamlRestTest').configure {
+    testDistribution = 'DEFAULT'
+    setting 'xpack.security.enabled', 'false'
+    // build-tools 8.x clears these for INTEG_TEST but does not restore them when switching to DEFAULT.
+    org.elasticsearch.gradle.DistributionDownloadPlugin.getContainer(project).matching {
+        it.name.startsWith('testclusters--yamlRestTest-')
+    }.configureEach {
+        platform = org.elasticsearch.gradle.ElasticsearchDistribution.CURRENT_PLATFORM
+        bundledJdk = true
+    }
 }
+
+// Elasticsearch 8.16+ uses morphology 1.8 (Lucene 9).
+ext.morphVersion = '1.8'
 
 dependencies {
     testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.17.2'

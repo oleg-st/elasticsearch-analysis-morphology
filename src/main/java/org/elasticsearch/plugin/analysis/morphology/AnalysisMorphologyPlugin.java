@@ -58,6 +58,9 @@ public class AnalysisMorphologyPlugin extends Plugin implements AnalysisPlugin {
                 new MorphologyTokenFilterFactory(indexSettings, environment, name, settings, russianLuceneMorphology));
         extra.put("english_morphology", (indexSettings, environment, name, settings) ->
                 new MorphologyTokenFilterFactory(indexSettings, environment, name, settings, englishLuceneMorphology));
+        extra.put("russian_surname", RussianSurnameTokenFilterFactory::new);
+        extra.put("russian_morphology_surnames", (indexSettings, environment, name, settings) ->
+                new RussianMorphologyWithSurnamesFilterFactory(indexSettings, environment, name, settings, russianLuceneMorphology));
         return extra;
     }
 
