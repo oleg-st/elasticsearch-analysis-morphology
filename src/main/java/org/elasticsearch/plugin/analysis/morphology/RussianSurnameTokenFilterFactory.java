@@ -5,10 +5,9 @@ import org.apache.lucene.analysis.TokenStream;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.IndexSettings;
-import org.elasticsearch.index.analysis.AbstractTokenFilterFactory;
 
 
-public class RussianSurnameTokenFilterFactory extends AbstractTokenFilterFactory {
+public class RussianSurnameTokenFilterFactory extends CompatibleTokenFilterFactory {
     private final RussianSurnameOptions options;
     private final RussianSurnameRules rules;
 

@@ -21,12 +21,11 @@ import org.apache.lucene.morphology.analyzer.MorphologyAnalyzer;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.IndexSettings;
-import org.elasticsearch.index.analysis.AbstractIndexAnalyzerProvider;
 
 /**
  * Provider for russian/english morphology analyzer
  */
-public class MorphologyAnalyzerProvider extends AbstractIndexAnalyzerProvider<MorphologyAnalyzer> {
+public class MorphologyAnalyzerProvider extends CompatibleAnalyzerProvider<MorphologyAnalyzer> {
 
     private final MorphologyAnalyzer analyzer;
 

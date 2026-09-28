@@ -38,3 +38,6 @@ eclipse-build
 
 
 *~
+
+# Python build tooling
+__pycache__/

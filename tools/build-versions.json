@@ -1,0 +1,7 @@
+[
+  {"elasticsearch": "8.16.0", "gradle": "8.11", "java": "21"},
+  {"elasticsearch": "8.19.0", "gradle": "8.11", "java": "21"},
+  {"elasticsearch": "9.1.0", "gradle": "8.14.3", "java": "21"},
+  {"elasticsearch": "9.1.9", "gradle": "8.14.3", "java": "21"},
+  {"elasticsearch": "9.4.2", "gradle": "9.5.1", "java": "21"}
+]

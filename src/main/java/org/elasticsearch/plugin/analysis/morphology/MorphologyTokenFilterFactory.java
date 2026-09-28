@@ -22,12 +22,11 @@ import org.apache.lucene.morphology.analyzer.MorphologyFilter;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.IndexSettings;
-import org.elasticsearch.index.analysis.AbstractTokenFilterFactory;
 
 /**
  * Russian/english morphology token filter factory
  */
-public class MorphologyTokenFilterFactory extends AbstractTokenFilterFactory {
+public class MorphologyTokenFilterFactory extends CompatibleTokenFilterFactory {
 
     private final LuceneMorphology luceneMorph;
 

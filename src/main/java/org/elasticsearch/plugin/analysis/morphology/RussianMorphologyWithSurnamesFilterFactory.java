@@ -10,12 +10,11 @@ import org.apache.lucene.morphology.LuceneMorphology;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.IndexSettings;
-import org.elasticsearch.index.analysis.AbstractTokenFilterFactory;
 import org.elasticsearch.index.analysis.Analysis;
 
 import java.util.regex.Pattern;
 
-public class RussianMorphologyWithSurnamesFilterFactory extends AbstractTokenFilterFactory {
+public class RussianMorphologyWithSurnamesFilterFactory extends CompatibleTokenFilterFactory {
     private static final Pattern INITIALS = Pattern.compile("^(?:\\p{L}\\.){1,2}(\\p{L}\\p{IsAlphabetic}+)$");
     private final LuceneMorphology morphology;
     private final RussianSurnameOptions options;

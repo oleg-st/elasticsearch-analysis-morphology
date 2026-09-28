@@ -1,0 +1,74 @@
+name: Build surname plugin
+
+on:
+  push:
+    branches: [surname]
+  pull_request:
+    branches: [surname]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: surname-build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  matrix:
+    # Manual runs must select surname; historical tags are never checked out.
+    if: github.ref == 'refs/heads/surname' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Check matrix tooling
+        run: python -m unittest discover -s tools -p 'test_build_versions.py'
+      - name: Read configured versions
+        id: targets
+        run: echo "matrix=$(python tools/build_versions.py --matrix)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.targets) }}
+    name: Elasticsearch ${{ matrix.elasticsearch }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: gradle
+          cache-dependency-path: |
+            build.gradle
+            gradle.properties
+            tools/build-versions.json
+      - name: Build and test current surname sources
+        run: python tools/build_versions.py --version '${{ matrix.elasticsearch }}'
+      - name: Upload installable plugin
+        uses: actions/upload-artifact@v7
+        with:
+          name: analysis-morphology-${{ matrix.elasticsearch }}-surname
+          path: build/versions/${{ matrix.elasticsearch }}/distributions/*.zip
+          if-no-files-found: error
+      - name: Upload test reports and cluster logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-${{ matrix.elasticsearch }}
+          path: |
+            build/versions/${{ matrix.elasticsearch }}/reports/
+            build/versions/${{ matrix.elasticsearch }}/test-results/
+            build/versions/${{ matrix.elasticsearch }}/testclusters/**/logs/
+          if-no-files-found: ignore
